@@ -8,3 +8,4 @@ const boardPresenter = new BoardPresenter({ boardContainer: mainContentElement }
 
 render(new FilterView(), filterContainerElement);
 boardPresenter.init();
+//при переключении на ветку 2-1, Код с 1-3 не перенеосится, пытаюсь починить
