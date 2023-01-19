@@ -1,7 +1,7 @@
 # Проект «Большое путешествие (простой)»
 
 * Студент: [Валерий  Волкогонов](https://up.htmlacademy.ru/ecmascript/19/user/2245577).
-* Наставник: `Неизвестно`.
+* Наставник: [Михаил Кислый] (https://htmlacademy.ru/profile/smart-grizzly).
 
 ---
 
