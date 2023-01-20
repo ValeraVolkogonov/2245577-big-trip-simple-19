@@ -5,7 +5,6 @@ import PointsModel from './model/points-model.js';
 
 const filterContainerElement = document.querySelector('.trip-controls__filters');
 const mainContentElement = document.querySelector('.trip-events');
-
 const pointsModel = new PointsModel();
 const boardPresenter = new BoardPresenter({
   boardContainer: mainContentElement,
