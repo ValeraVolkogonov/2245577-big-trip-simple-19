@@ -14,3 +14,5 @@ const boardPresenter = new BoardPresenter({
 render(new FilterView(), filterContainerElement);
 
 boardPresenter.init();
+
+// синхрон лок и удл репозиториев;
