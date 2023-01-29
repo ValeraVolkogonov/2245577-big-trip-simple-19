@@ -1,7 +1,8 @@
 import AbstractView from '../framework/view/abstract-view.js';
 import { POINT_TYPES } from '../const.js';
 import dayjs from 'dayjs';
-import { capitalizeFirstLetter } from '../utils.js';
+import { capitalizeFirstLetter } from '../utils/common.js';
+
 const BLANK_POINT = {
   basePrice: null,
   dateFrom: new Date('2022-01-01T00:00'),
