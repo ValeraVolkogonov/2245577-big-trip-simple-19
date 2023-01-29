@@ -1,5 +1,5 @@
+import { render } from './framework/render.js';
 import FilterView from './view/filter-view.js';
-import { render } from './render.js';
 import BoardPresenter from './presenter/board-presenter.js';
 import PointsModel from './model/points-model.js';
 
@@ -10,9 +10,5 @@ const boardPresenter = new BoardPresenter({
   boardContainer: mainContentElement,
   pointsModel,
 });
-
 render(new FilterView(), filterContainerElement);
-
 boardPresenter.init();
-
-// синхрон лок и удл репозиториев;

@@ -1,11 +1,10 @@
-import { createElement } from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import dayjs from 'dayjs';
 
 function createPointOffersTemplate({ pointOffers, allOffers }) {
   if (pointOffers.length === 0) {
     return '<span class="event__offer-title">No additional offers</span>';
   }
-
   return pointOffers.map((pointOfferId) => {
     const pointOffer = allOffers.find((offer) => offer.id === pointOfferId);
     return (`<li class="event__offer">
@@ -15,14 +14,12 @@ function createPointOffersTemplate({ pointOffers, allOffers }) {
     </li>`);
   }).join('');
 }
-
 function createPointTemplate(data) {
   const point = data.point;
   const { basePrice, dateFrom, dateTo, type } = point;
   const destination = data.destinations.find((dest) => dest.id === point.destination);
   const pointOffers = point.offers;
   const allOffers = data.offers;
-
   return (
     `
     <li class="trip-events__item">
@@ -44,7 +41,7 @@ function createPointTemplate(data) {
         </p>
         <h4 class="visually-hidden">Offers:</h4>
         <ul class="event__selected-offers">
-          ${createPointOffersTemplate({pointOffers, allOffers})}
+          ${createPointOffersTemplate({ pointOffers, allOffers })}
         </ul>
         <button class="event__rollup-btn" type="button">
           <span class="visually-hidden">Open event</span>
@@ -55,26 +52,24 @@ function createPointTemplate(data) {
   );
 }
 
-export default class PointView {
-  #element = null;
+export default class PointView extends AbstractView {
   #data = null;
+  #handleEditClick = null;
 
-  constructor(data) {
+  constructor({ data, onEditClick }) {
+    super();
     this.#data = data;
+    this.#handleEditClick = onEditClick;
+
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#editClickHandler);
   }
 
   get template() {
     return createPointTemplate(this.#data);
   }
 
-  get element() {
-    if (!this.#element) {
-      this.#element = createElement(this.template);
-    }
-    return this.#element;
-  }
-
-  removeElement() {
-    this.#element = null;
-  }
+  #editClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleEditClick();
+  };
 }
