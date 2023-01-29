@@ -1,8 +1,7 @@
-import { createElement } from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import { POINT_TYPES } from '../const.js';
 import dayjs from 'dayjs';
 import { capitalizeFirstLetter } from '../utils.js';
-
 const BLANK_POINT = {
   basePrice: null,
   dateFrom: new Date('2022-01-01T00:00'),
@@ -10,7 +9,6 @@ const BLANK_POINT = {
   offers: [],
   type: POINT_TYPES[0],
 };
-
 function createPointEditEventTypeItemsTemplate() {
   return POINT_TYPES.map((pointType, i) => `
     <div class="event__type-item">
@@ -20,7 +18,6 @@ function createPointEditEventTypeItemsTemplate() {
     `)
     .join('');
 }
-
 function createPointEditOffersDestinationTemplate({ point, destination, allOffers, offersByType }) {
   if (point.offers.length === 0 && destination.name === '') {
     return '';
@@ -32,10 +29,8 @@ function createPointEditOffersDestinationTemplate({ point, destination, allOffer
     </section>
 `);
 }
-
 function createPointEditOffersTemplate({ point, allOffers, offersByType }) {
   const pointAvaliableOfferIds = offersByType.find((o) => o.type === point.type).offers;
-
   const offersMarkup = pointAvaliableOfferIds.map((pointAvaliableOfferId, i) => {
     const offer = allOffers.find((o) => o.id === pointAvaliableOfferId);
     const checked = point.offers.includes(offer.id) ? 'checked' : '';
@@ -50,7 +45,6 @@ function createPointEditOffersTemplate({ point, allOffers, offersByType }) {
         </label>
       </div>`;
   }).join('');
-
   return (`
     <section class="event__section  event__section--offers">
       <h3 class="event__section-title  event__section-title--offers">Offers</h3>
@@ -60,12 +54,11 @@ function createPointEditOffersTemplate({ point, allOffers, offersByType }) {
     </section>
   `);
 }
-
 function createPointEditDestinationTemplate(destination) {
   const photosTape = destination.pictures.length === 0 ? '' : `
     <div class="event__photos-container">
       <div class="event__photos-tape">
-        ${destination.pictures.map(({src, description}) => `<img class="event__photo" src="${src}" alt="${description}">`)}
+        ${destination.pictures.map(({ src, description }) => `<img class="event__photo" src="${src}" alt="${description}">`)}
       </div>
     </div>
   `;
@@ -77,7 +70,6 @@ function createPointEditDestinationTemplate(destination) {
     </section>
   `);
 }
-
 function createPointEditTemplate(data) {
   const isNewPoint = data.point === null;
   const point = isNewPoint ? BLANK_POINT : data.point;
@@ -85,7 +77,6 @@ function createPointEditTemplate(data) {
   const destination = isNewPoint ? { name: '' } : data.destinations.find((dest) => dest.id === point.destination);
   const allOffers = data.offers;
   const offersByType = data.offersByType;
-
   return (
     `
     <li class="trip-events__item">
@@ -100,7 +91,6 @@ function createPointEditTemplate(data) {
             <div class="event__type-list">
               <fieldset class="event__type-group">
                 <legend class="visually-hidden">Event type</legend>
-
                 ${createPointEditEventTypeItemsTemplate(point)}
               </fieldset>
             </div>
@@ -140,33 +130,44 @@ function createPointEditTemplate(data) {
           </button>
           `}
         </header>
-        ${createPointEditOffersDestinationTemplate({point, destination, allOffers, offersByType})}
+        ${createPointEditOffersDestinationTemplate({ point, destination, allOffers, offersByType })}
       </form>
     </li>
     `
   );
 }
-
-export default class PointEditView {
-  #element = null;
+export default class PointEditView extends AbstractView {
   #data = null;
+  #handleFormSubmit = null;
+  #handleDeleteClick = null;
+  #handleCloseClick = null;
 
-  constructor(data) {
+  constructor({ data, onFormSubmit, onDeleteClick, onCloseClick }) {
+    super();
     this.#data = data;
+    this.#handleFormSubmit = onFormSubmit;
+    this.#handleDeleteClick = onDeleteClick;
+    this.#handleCloseClick = onCloseClick;
+
+    this.element.querySelector('form').addEventListener('submit', this.#formSubmitHandler);
+    this.element.querySelector('.event__reset-btn').addEventListener('click', this.#deleteClickHandler);
+    this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#closeClickHandler);
   }
 
   get template() {
     return createPointEditTemplate(this.#data);
   }
 
-  get element() {
-    if (!this.#element) {
-      this.#element = createElement(this.template);
-    }
-    return this.#element;
-  }
+  #formSubmitHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleFormSubmit();
+  };
 
-  removeElement() {
-    this.#element = null;
-  }
+  #deleteClickHandler = () => {
+    this.#handleDeleteClick();
+  };
+
+  #closeClickHandler = () => {
+    this.#handleCloseClick();
+  };
 }
