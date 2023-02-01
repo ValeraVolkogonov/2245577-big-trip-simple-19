@@ -66,6 +66,7 @@ export default class PointPresenter {
 
   resetView() {
     if (this.#mode !== Mode.DEFAULT) {
+      this.#pointEditComponent.reset(this.#point);
       this.#replaceFormToEvent();
     }
   }
@@ -99,11 +100,10 @@ export default class PointPresenter {
     this.#replaceFormToEvent();
   };
 
-  #handleDeleteClick = () => {
-    this.#replaceFormToEvent();
-  };
+  #handleDeleteClick = () => { };
 
   #handleCloseClick = () => {
+    this.#pointEditComponent.reset(this.#point);
     this.#replaceFormToEvent();
   };
 }
