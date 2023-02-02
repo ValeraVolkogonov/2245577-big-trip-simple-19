@@ -1,60 +1,59 @@
 import { render, replace, remove } from '../framework/render.js';
 import PointView from '../view/point-view.js';
 import PointEditView from '../view/point-edit-view.js';
+import { UserAction, UpdateType } from '../const.js';
+import { isDatesEqual, calculateTotalPrice } from '../utils/point.js';
 
 const Mode = {
   DEFAULT: 'DEFAULT',
   EDITING: 'EDITING',
 };
-
 export default class PointPresenter {
   #pointListContainer = null;
   #handleDataChange = null;
   #handleModeChange = null;
-
   #pointComponent = null;
   #pointEditComponent = null;
 
   #point = null;
+  #pointCommon = null;
   #mode = Mode.DEFAULT;
 
-  constructor({ pointListContainer, onDataChange, onModeChange }) {
+  constructor({ pointListContainer, pointCommon, onDataChange, onModeChange }) {
     this.#pointListContainer = pointListContainer;
+    this.#pointCommon = pointCommon;
     this.#handleDataChange = onDataChange;
     this.#handleModeChange = onModeChange;
   }
 
   init(point) {
     this.#point = point;
-
     const prevPointComponent = this.#pointComponent;
     const prevPointEditComponent = this.#pointEditComponent;
 
     this.#pointComponent = new PointView({
       point: this.#point,
+      pointCommon: this.#pointCommon,
       onEditClick: this.#handleEditClick,
     });
 
     this.#pointEditComponent = new PointEditView({
       point: this.#point,
+      pointCommon: this.#pointCommon,
       onFormSubmit: this.#handleFormSubmit,
       onDeleteClick: this.#handleDeleteClick,
       onCloseClick: this.#handleCloseClick,
     });
-
     if (prevPointComponent === null || prevPointEditComponent === null) {
       render(this.#pointComponent, this.#pointListContainer);
       return;
     }
-
     if (this.#mode === Mode.DEFAULT) {
       replace(this.#pointComponent, prevPointComponent);
     }
-
     if (this.#mode === Mode.EDITING) {
       replace(this.#pointEditComponent, prevPointEditComponent);
     }
-
     remove(prevPointComponent);
     remove(prevPointEditComponent);
   }
@@ -87,6 +86,7 @@ export default class PointPresenter {
   #escKeyDownHandler = (evt) => {
     if (evt.key === 'Escape' || evt.key === 'Esc') {
       evt.preventDefault();
+      this.#pointEditComponent.reset(this.#point);
       this.#replaceFormToEvent();
     }
   };
@@ -95,12 +95,26 @@ export default class PointPresenter {
     this.#replaceEventToForm();
   };
 
-  #handleFormSubmit = (point) => {
-    this.#handleDataChange(point);
+  #handleFormSubmit = (update) => {
+    const isPatchUpdate =
+      isDatesEqual(this.#point.dateFrom, update.dateFrom) &&
+      calculateTotalPrice(this.#point, this.#pointCommon) === calculateTotalPrice(update, this.#pointCommon);
+
+    this.#handleDataChange(
+      UserAction.UPDATE_POINT,
+      isPatchUpdate ? UpdateType.PATCH : UpdateType.MINOR,
+      update,
+    );
     this.#replaceFormToEvent();
   };
 
-  #handleDeleteClick = () => { };
+  #handleDeleteClick = (point) => {
+    this.#handleDataChange(
+      UserAction.DELETE_POINT,
+      UpdateType.MINOR,
+      point,
+    );
+  };
 
   #handleCloseClick = () => {
     this.#pointEditComponent.reset(this.#point);
