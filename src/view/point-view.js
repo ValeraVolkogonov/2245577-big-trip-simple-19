@@ -1,6 +1,6 @@
 import AbstractView from '../framework/view/abstract-view.js';
 import dayjs from 'dayjs';
-import { calculateTotalPrice } from '../utils/point.js';
+import { calculateTotalPrice, getOffersByType } from '../utils/point.js';
 
 const createSelectedOffersTemplate = (point, pointCommon) => {
   if (point.selectedOffers.length === 0) {
@@ -8,7 +8,8 @@ const createSelectedOffersTemplate = (point, pointCommon) => {
   }
 
   return point.selectedOffers.map((selectedOfferId) => {
-    const selectedOffer = pointCommon.allOffers.find((offer) => offer.id === selectedOfferId);
+    const offersByType = getOffersByType(point, pointCommon);
+    const selectedOffer = offersByType.find((offer) => offer.id === selectedOfferId);
     return (`<li class="event__offer">
       <span class="event__offer-title">${selectedOffer.title}</span>
       &plus;&euro;&nbsp;
@@ -16,12 +17,10 @@ const createSelectedOffersTemplate = (point, pointCommon) => {
     </li>`);
   }).join('');
 };
-
 const createPointTemplate = (point, pointCommon) => {
   const { dateFrom, dateTo, type } = point;
   const totalPrice = calculateTotalPrice(point, pointCommon);
   const destination = pointCommon.allDestinations.find((dest) => dest.id === point.destId);
-
   return (
     `
     <li class="trip-events__item">
@@ -53,18 +52,15 @@ const createPointTemplate = (point, pointCommon) => {
     `
   );
 };
-
 export default class PointView extends AbstractView {
   #point = null;
   #pointCommon = null;
   #handleEditClick = null;
-
   constructor({ point, pointCommon, onEditClick }) {
     super();
     this.#point = point;
     this.#pointCommon = pointCommon;
     this.#handleEditClick = onEditClick;
-
     this.element.querySelector('.event__rollup-btn').addEventListener('click', this.#editClickHandler);
   }
 

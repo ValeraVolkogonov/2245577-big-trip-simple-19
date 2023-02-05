@@ -2,6 +2,8 @@ import { render, remove } from '../framework/render.js';
 import SortView from '../view/sort-view.js';
 import PointListView from '../view/point-list-view.js';
 import NoPointView from '../view/no-point-view.js';
+import LoadingView from '../view/loading-view.js';
+import ErrorLoadingView from '../view/error-loading-view.js';
 import PointPresenter from './point-presenter.js';
 import NewPointPresenter from './new-point-presenter.js';
 import { sortDate, sortPrice, calculateTotalPrice } from '../utils/point.js';
@@ -15,13 +17,19 @@ export default class BoardPresenter {
   #filterModel = null;
 
   #pointListComponent = new PointListView();
+  #loadingComponent = new LoadingView();
+  #ErrorLoadingView = new ErrorLoadingView();
   #sortComponent = null;
   #noPointComponent = null;
+
   #pointCommon = null;
   #pointPresenter = new Map();
   #newPointPresenter = null;
   #currentSortType = SortType.DAY;
   #filterType = FilterType.EVERYTHING;
+  #isPointLoading = true;
+  #isPointCommonLoading = true;
+  #isErrorLoading = false;
 
   constructor({ boardContainer, pointsModel, pointCommonModel, filterModel, onNewPointDestroy }) {
     this.#boardContainer = boardContainer;
@@ -37,6 +45,7 @@ export default class BoardPresenter {
     });
 
     this.#pointsModel.addObserver(this.#handleModelEvent);
+    this.#pointCommonModel.addObserver(this.#handleModelEvent);
     this.#filterModel.addObserver(this.#handleModelEvent);
   }
 
@@ -44,7 +53,6 @@ export default class BoardPresenter {
     this.#filterType = this.#filterModel.filter;
     const points = this.#pointsModel.points;
     const filteredPoints = filter[this.#filterType](points);
-
     switch (this.#currentSortType) {
       case SortType.DAY:
         filteredPoints.sort(sortDate);
@@ -57,7 +65,6 @@ export default class BoardPresenter {
         filteredPoints.forEach((point) => delete point.totalPrice);
         break;
     }
-
     return filteredPoints;
   }
 
@@ -103,6 +110,26 @@ export default class BoardPresenter {
         this.#clearBoard({ resetSortType: true });
         this.#renderBoard();
         break;
+      case UpdateType.INIT_POINT:
+        this.#isPointLoading = false;
+        if (!this.#isPointLoading && !this.#isPointCommonLoading) {
+          remove(this.#loadingComponent);
+          this.#renderBoard();
+        }
+        break;
+      case UpdateType.INIT_POINT_COMMON:
+        this.#pointCommon = this.#pointCommonModel.pointCommon;
+        this.#isPointCommonLoading = false;
+        if (!this.#isPointLoading && !this.#isPointCommonLoading) {
+          remove(this.#loadingComponent);
+          this.#renderBoard();
+        }
+        break;
+      case UpdateType.ERROR_LOADING:
+        this.#isErrorLoading = true;
+        remove(this.#loadingComponent);
+        this.#renderBoard();
+        break;
     }
   };
 
@@ -110,7 +137,6 @@ export default class BoardPresenter {
     if (this.#currentSortType === sortType) {
       return;
     }
-
     this.#currentSortType = sortType;
     this.#clearBoard();
     this.#renderBoard();
@@ -121,7 +147,6 @@ export default class BoardPresenter {
       currentSortType: this.#currentSortType,
       onSortTypeChange: this.#handleSortTypeChange
     });
-
     render(this.#sortComponent, this.#boardContainer);
   }
 
@@ -129,11 +154,18 @@ export default class BoardPresenter {
     points.forEach((point) => this.#renderPoint(point));
   }
 
+  #renderLoading() {
+    render(this.#loadingComponent, this.#boardContainer);
+  }
+
+  #renderErrorLoading() {
+    render(this.#ErrorLoadingView, this.#boardContainer);
+  }
+
   #renderNoPoints() {
     this.#noPointComponent = new NoPointView({
       filterType: this.#filterType
     });
-
     render(this.#noPointComponent, this.#boardContainer);
   }
 
@@ -154,23 +186,32 @@ export default class BoardPresenter {
     this.#pointPresenter.clear();
 
     remove(this.#sortComponent);
+    remove(this.#loadingComponent);
 
     if (this.#noPointComponent) {
       remove(this.#noPointComponent);
     }
-
     if (resetSortType) {
       this.#currentSortType = SortType.DAY;
     }
   }
 
   #renderBoard() {
+    if (this.#isErrorLoading) {
+      this.#renderErrorLoading();
+      return;
+    }
+
+    if (this.#isPointLoading || this.#isPointCommonLoading) {
+      this.#renderLoading();
+      return;
+    }
+
     const points = this.points;
     if (points.length === 0) {
       this.#renderNoPoints();
       return;
     }
-
     this.#renderSort();
     render(this.#pointListComponent, this.#boardContainer);
     this.#renderPoints(points);

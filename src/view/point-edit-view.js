@@ -2,30 +2,26 @@ import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 import { POINT_TYPES } from '../const.js';
 import dayjs from 'dayjs';
 import { capitalizeFirstLetter } from '../utils/common.js';
-import { pointAvaliableOfferIds } from '../utils/point.js';
+import { getOffersByType } from '../utils/point.js';
 import flatpickr from 'flatpickr';
 
 import 'flatpickr/dist/flatpickr.min.css';
-
 const BLANK_POINT = {
   basePrice: 0,
   destId: -1,
   selectedOffers: [],
   type: POINT_TYPES[0],
 };
-
 const createPointEditEventTypeItemsTemplate = () => POINT_TYPES.map((pointType, i) => `
     <div class="event__type-item">
       <input id="event-type-${i}" class="event__type-input  visually-hidden" type="radio" name="event-type" value="${pointType}">
       <label class="event__type-label  event__type-label--${pointType}" for="event-type-${i}">${capitalizeFirstLetter(pointType)}</label>
     </div>
     `)
-
   .join('');
 
 const createPointEditOffersTemplate = (point, pointCommon) => {
-  const offersMarkup = pointAvaliableOfferIds(point, pointCommon).map((pointAvaliableOfferId, i) => {
-    const offer = pointCommon.allOffers.find((o) => o.id === pointAvaliableOfferId);
+  const offersMarkup = getOffersByType(point, pointCommon).map((offer, i) => {
     const checked = point.selectedOffers.includes(offer.id) ? 'checked' : '';
     const eventInputName = `event-offer-${offer.title.toLowerCase().replaceAll(' ', '-')}`;
     return `
@@ -38,7 +34,6 @@ const createPointEditOffersTemplate = (point, pointCommon) => {
           </label>
         </div>`;
   }).join('');
-
   return (`
       <section class="event__section  event__section--offers">
         <h3 class="event__section-title  event__section-title--offers">Offers</h3>
@@ -48,7 +43,6 @@ const createPointEditOffersTemplate = (point, pointCommon) => {
       </section>
     `);
 };
-
 const createPointEditDestinationTemplate = (point, pointCommon) => {
   const destination = pointCommon.allDestinations.find((dest) => dest.id === point.destId);
   const photosTape = destination.pictures.length === 0 ? '' : `
@@ -66,18 +60,17 @@ const createPointEditDestinationTemplate = (point, pointCommon) => {
     </section>
   `);
 };
+
 const createPointEditOffersDestinationTemplate = (point, pointCommon) => (`
     <section class="event__details">
-    ${(pointAvaliableOfferIds(point, pointCommon).length > 0) ? `${createPointEditOffersTemplate(point, pointCommon)}` : ''}
+    ${(getOffersByType(point, pointCommon).length > 0) ? `${createPointEditOffersTemplate(point, pointCommon)}` : ''}
     ${(point.destId !== -1) ? `${createPointEditDestinationTemplate(point, pointCommon)}` : ''}
     </section>
 `);
-
 const createPointEditTemplate = (point, pointCommon) => {
   const isNewPoint = !('id' in point);
   const { basePrice, dateFrom, dateTo, type } = point;
   const destinationDataList = pointCommon.allDestinations.map((dest) => `<option value="${dest.name}">`).join('');
-
   let destName = '';
   let isSubmitDisabled = true;
   if (point.destId !== -1) {
@@ -86,7 +79,7 @@ const createPointEditTemplate = (point, pointCommon) => {
   }
 
   const pointEditOffersDestinationTemplate =
-    (pointAvaliableOfferIds(point, pointCommon).length === 0 && point.destId === -1) ? '' :
+    (getOffersByType(point, pointCommon).length === 0 && point.destId === -1) ? '' :
       createPointEditOffersDestinationTemplate(point, pointCommon);
 
   return (
@@ -146,14 +139,12 @@ const createPointEditTemplate = (point, pointCommon) => {
     `
   );
 };
-
 export default class PointEditView extends AbstractStatefulView {
   #pointCommon = null;
   #handleFormSubmit = null;
   #handleDeleteClick = null;
   #handleCloseClick = null;
   #datepicker = { from: null, to: null };
-
   constructor(
     { point = {
       ...BLANK_POINT,
@@ -198,7 +189,7 @@ export default class PointEditView extends AbstractStatefulView {
     }
     this.element.querySelector('.event__type-group').addEventListener('change', this.#pointTypeChangeHandler);
     this.element.querySelector('.event__input--price').addEventListener('input', this.#priceInputHandler);
-    if (pointAvaliableOfferIds(this._state, this.#pointCommon).length > 0) {
+    if (getOffersByType(this._state, this.#pointCommon).length > 0) {
       this.element.querySelector('.event__available-offers').addEventListener('change', this.#offerChangeHandler);
     }
     this.element.querySelector('.event__input--destination').addEventListener('change', this.#destinationChangeHandler);
