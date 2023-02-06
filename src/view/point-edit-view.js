@@ -5,6 +5,7 @@ import { capitalizeFirstLetter } from '../utils/common.js';
 import { getOffersByType } from '../utils/point.js';
 import flatpickr from 'flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
+
 const BLANK_POINT = {
   basePrice: 1,
   destId: -1,
