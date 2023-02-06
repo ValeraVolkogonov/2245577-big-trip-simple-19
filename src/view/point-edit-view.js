@@ -4,10 +4,9 @@ import dayjs from 'dayjs';
 import { capitalizeFirstLetter } from '../utils/common.js';
 import { getOffersByType } from '../utils/point.js';
 import flatpickr from 'flatpickr';
-
 import 'flatpickr/dist/flatpickr.min.css';
 const BLANK_POINT = {
-  basePrice: 0,
+  basePrice: 1,
   destId: -1,
   selectedOffers: [],
   type: POINT_TYPES[0],
@@ -19,10 +18,9 @@ const createPointEditEventTypeItemsTemplate = () => POINT_TYPES.map((pointType, 
     </div>
     `)
   .join('');
-
-const createPointEditOffersTemplate = (point, pointCommon) => {
-  const offersMarkup = getOffersByType(point, pointCommon).map((offer, i) => {
-    const checked = point.selectedOffers.includes(offer.id) ? 'checked' : '';
+const createPointEditOffersTemplate = (data, pointCommon) => {
+  const offersMarkup = getOffersByType(data, pointCommon).map((offer, i) => {
+    const checked = data.selectedOffers.includes(offer.id) ? 'checked' : '';
     const eventInputName = `event-offer-${offer.title.toLowerCase().replaceAll(' ', '-')}`;
     return `
         <div class="event__offer-selector">
@@ -43,8 +41,8 @@ const createPointEditOffersTemplate = (point, pointCommon) => {
       </section>
     `);
 };
-const createPointEditDestinationTemplate = (point, pointCommon) => {
-  const destination = pointCommon.allDestinations.find((dest) => dest.id === point.destId);
+const createPointEditDestinationTemplate = (data, pointCommon) => {
+  const destination = pointCommon.allDestinations.find((dest) => dest.id === data.destId);
   const photosTape = destination.pictures.length === 0 ? '' : `
     <div class="event__photos-container">
       <div class="event__photos-tape">
@@ -60,27 +58,27 @@ const createPointEditDestinationTemplate = (point, pointCommon) => {
     </section>
   `);
 };
-
-const createPointEditOffersDestinationTemplate = (point, pointCommon) => (`
+const createPointEditOffersDestinationTemplate = (data, pointCommon) => (`
     <section class="event__details">
-    ${(getOffersByType(point, pointCommon).length > 0) ? `${createPointEditOffersTemplate(point, pointCommon)}` : ''}
-    ${(point.destId !== -1) ? `${createPointEditDestinationTemplate(point, pointCommon)}` : ''}
+    ${(getOffersByType(data, pointCommon).length > 0) ? `${createPointEditOffersTemplate(data, pointCommon)}` : ''}
+    ${(data.destId !== -1) ? `${createPointEditDestinationTemplate(data, pointCommon)}` : ''}
     </section>
 `);
-const createPointEditTemplate = (point, pointCommon) => {
-  const isNewPoint = !('id' in point);
-  const { basePrice, dateFrom, dateTo, type } = point;
+const createPointEditTemplate = (data, pointCommon) => {
+  const isNewPoint = !('id' in data);
+  const { basePrice, dateFrom, dateTo, type, isDisabled, isSaving, isDeleting } = data;
   const destinationDataList = pointCommon.allDestinations.map((dest) => `<option value="${dest.name}">`).join('');
   let destName = '';
   let isSubmitDisabled = true;
-  if (point.destId !== -1) {
-    destName = pointCommon.allDestinations.find((dest) => dest.id === point.destId).name;
+  if (data.destId !== -1) {
+    destName = pointCommon.allDestinations.find((dest) => dest.id === data.destId).name;
     isSubmitDisabled = false;
   }
-
   const pointEditOffersDestinationTemplate =
-    (getOffersByType(point, pointCommon).length === 0 && point.destId === -1) ? '' :
-      createPointEditOffersDestinationTemplate(point, pointCommon);
+    (getOffersByType(data, pointCommon).length === 0 && data.destId === -1) ? '' :
+      createPointEditOffersDestinationTemplate(data, pointCommon);
+
+  const markupId = 'id' in data ? data.id : 'new-point';
 
   return (
     `
@@ -88,47 +86,61 @@ const createPointEditTemplate = (point, pointCommon) => {
       <form class="event event--edit" action="#" method="post">
         <header class="event__header">
           <div class="event__type-wrapper">
-            <label class="event__type  event__type-btn" for="event-type-toggle-${point.id}">
+            <label class="event__type  event__type-btn" for="event-type-toggle-${markupId}">
               <span class="visually-hidden">Choose event type</span>
               <img class="event__type-icon" width="17" height="17" src="img/icons/${type}.png" alt="Event type icon">
             </label>
-            <input class="event__type-toggle  visually-hidden" id="event-type-toggle-${point.id}" type="checkbox">
+            <input class="event__type-toggle  visually-hidden" id="event-type-toggle-${markupId}"
+              type="checkbox" ${isDisabled ? 'disabled' : ''}>
             <div class="event__type-list">
               <fieldset class="event__type-group">
                 <legend class="visually-hidden">Event type</legend>
-                ${createPointEditEventTypeItemsTemplate(point)}
+                ${createPointEditEventTypeItemsTemplate(data)}
               </fieldset>
             </div>
           </div>
           <div class="event__field-group  event__field-group--destination">
-            <label class="event__label  event__type-output" for="event-destination-${point.id}">
+            <label class="event__label  event__type-output" for="event-destination-${markupId}">
               ${type}
             </label>
-            <input class="event__input  event__input--destination" id="event-destination-${point.id}" type="text" name="event-destination" value="${destName}" list="destination-list-${point.id}">
-            <datalist id="destination-list-${point.id}">
+            <input class="event__input  event__input--destination" id="event-destination-${markupId}"
+              type="text" name="event-destination" value="${destName}" list="destination-list-${markupId}"
+              ${isDisabled ? 'disabled' : ''}>
+            <datalist id="destination-list-${markupId}">
               ${destinationDataList}
             </datalist>
           </div>
           <div class="event__field-group  event__field-group--time">
             <label class="visually-hidden" for="event-start-time">From</label>
-            <input class="event__input  event__input--time" id="event-start-time" type="text" name="event-start-time" value="${dayjs(dateFrom).format('DD/MM/YY HH:mm')}">
+            <input class="event__input  event__input--time" id="event-start-time" type="text"
+              name="event-start-time" value="${dayjs(dateFrom).format('DD/MM/YY HH:mm')}"
+              ${isDisabled ? 'disabled' : ''}>
             &mdash;
             <label class="visually-hidden" for="event-end-time">To</label>
-            <input class="event__input  event__input--time" id="event-end-time" type="text" name="event-end-time" value="${dayjs(dateTo).format('DD/MM/YY HH:mm')}">
+            <input class="event__input  event__input--time" id="event-end-time" type="text"
+              name="event-end-time" value="${dayjs(dateTo).format('DD/MM/YY HH:mm')}"
+              ${isDisabled ? 'disabled' : ''}>
           </div>
           <div class="event__field-group  event__field-group--price">
-            <label class="event__label" for="event-price-${point.id}">
+            <label class="event__label" for="event-price-${markupId}">
               <span class="visually-hidden">Price</span>
               &euro;
             </label>
-            <input class="event__input  event__input--price" id="event-price-${point.id}" type="text" name="event-price" value="${basePrice !== null ? basePrice : ''}">
+            <input class="event__input  event__input--price" id="event-price-${markupId}"
+              type="text" name="event-price" value="${basePrice !== null ? basePrice : ''}"
+              ${isDisabled ? 'disabled' : ''}>
           </div>
-          <button class="event__save-btn  btn  btn--blue" type="submit" ${isSubmitDisabled ? 'disabled' : ''}>Save</button>
+          <button class="event__save-btn  btn  btn--blue" type="submit"
+            ${isSubmitDisabled || isDisabled ? 'disabled' : ''}>
+            ${isSaving ? 'Saving...' : 'Save'}
+          </button>
           ${isNewPoint ? `
-          <button class="event__reset-btn" type="reset">Cancel</button>
+          <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>Cancel</button>
           ` : `
-          <button class="event__reset-btn" type="reset">Delete</button>
-          <button class="event__rollup-btn" type="button">
+          <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>
+            ${isDeleting ? 'Deleting...' : 'Delete'}
+          </button>
+          <button class="event__rollup-btn" type="button" ${isDisabled ? 'disabled' : ''}>
             <span class="visually-hidden">Open event</span>
           </button>
           `}
@@ -207,10 +219,13 @@ export default class PointEditView extends AbstractStatefulView {
 
   #priceInputHandler = (evt) => {
     evt.preventDefault();
-    if (evt.target.value === '') { evt.target.value = '0'; }
+    if (evt.target.value === '') { evt.target.value = '1'; }
     const parsedPrice = parseInt(evt.target.value, 10);
-    evt.target.value = isNaN(parsedPrice) ? this._state.basePrice : parsedPrice;
-    this._state.basePrice = parseInt(evt.target.value, 10);
+    if (isNaN(parsedPrice) || parsedPrice < 1) {
+      evt.target.value = this._state.basePrice;
+    } else {
+      this._state.basePrice = parsedPrice;
+    }
   };
 
   #offerChangeHandler = (evt) => {
@@ -284,10 +299,19 @@ export default class PointEditView extends AbstractStatefulView {
   };
 
   static parsePointToState(point) {
-    return { ...point };
+    return {
+      ...point,
+      isDisabled: false,
+      isSaving: false,
+      isDeleting: false,
+    };
   }
 
   static parseStateToPoint(state) {
-    return { ...state };
+    const point = { ...state };
+    delete point.isDisabled;
+    delete point.isSaving;
+    delete point.isDeleting;
+    return point;
   }
 }

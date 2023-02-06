@@ -3,7 +3,6 @@ import PointView from '../view/point-view.js';
 import PointEditView from '../view/point-edit-view.js';
 import { UserAction, UpdateType } from '../const.js';
 import { isDatesEqual, calculateTotalPrice } from '../utils/point.js';
-
 const Mode = {
   DEFAULT: 'DEFAULT',
   EDITING: 'EDITING',
@@ -14,11 +13,9 @@ export default class PointPresenter {
   #handleModeChange = null;
   #pointComponent = null;
   #pointEditComponent = null;
-
   #point = null;
   #pointCommon = null;
   #mode = Mode.DEFAULT;
-
   constructor({ pointListContainer, pointCommon, onDataChange, onModeChange }) {
     this.#pointListContainer = pointListContainer;
     this.#pointCommon = pointCommon;
@@ -30,13 +27,11 @@ export default class PointPresenter {
     this.#point = point;
     const prevPointComponent = this.#pointComponent;
     const prevPointEditComponent = this.#pointEditComponent;
-
     this.#pointComponent = new PointView({
       point: this.#point,
       pointCommon: this.#pointCommon,
       onEditClick: this.#handleEditClick,
     });
-
     this.#pointEditComponent = new PointEditView({
       point: this.#point,
       pointCommon: this.#pointCommon,
@@ -51,9 +46,12 @@ export default class PointPresenter {
     if (this.#mode === Mode.DEFAULT) {
       replace(this.#pointComponent, prevPointComponent);
     }
+
     if (this.#mode === Mode.EDITING) {
-      replace(this.#pointEditComponent, prevPointEditComponent);
+      replace(this.#pointComponent, prevPointEditComponent);
+      this.#mode = Mode.DEFAULT;
     }
+
     remove(prevPointComponent);
     remove(prevPointEditComponent);
   }
@@ -68,6 +66,41 @@ export default class PointPresenter {
       this.#pointEditComponent.reset(this.#point);
       this.#replaceFormToEvent();
     }
+  }
+
+  setSaving() {
+    if (this.#mode === Mode.EDITING) {
+      this.#pointEditComponent.updateElement({
+        isDisabled: true,
+        isSaving: true,
+      });
+    }
+  }
+
+  setDeleting() {
+    if (this.#mode === Mode.EDITING) {
+      this.#pointEditComponent.updateElement({
+        isDisabled: true,
+        isDeleting: true,
+      });
+    }
+  }
+
+  setAborting() {
+    if (this.#mode === Mode.DEFAULT) {
+      this.#pointComponent.shake();
+      return;
+    }
+
+    const resetFormState = () => {
+      this.#pointEditComponent.updateElement({
+        isDisabled: false,
+        isSaving: false,
+        isDeleting: false,
+      });
+    };
+
+    this.#pointEditComponent.shake(resetFormState);
   }
 
   #replaceEventToForm() {
@@ -99,13 +132,11 @@ export default class PointPresenter {
     const isPatchUpdate =
       isDatesEqual(this.#point.dateFrom, update.dateFrom) &&
       calculateTotalPrice(this.#point, this.#pointCommon) === calculateTotalPrice(update, this.#pointCommon);
-
     this.#handleDataChange(
       UserAction.UPDATE_POINT,
       isPatchUpdate ? UpdateType.PATCH : UpdateType.MINOR,
       update,
     );
-    this.#replaceFormToEvent();
   };
 
   #handleDeleteClick = (point) => {
