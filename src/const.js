@@ -25,5 +25,4 @@ const UpdateType = {
   ERROR_LOADING: 'ERROR_LOADING',
 };
 
-
 export { POINT_TYPES, FilterType, SortType, UserAction, UpdateType };
