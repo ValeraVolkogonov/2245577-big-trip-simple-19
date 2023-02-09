@@ -264,23 +264,23 @@ export default class PointEditView extends AbstractStatefulView {
       this.element.querySelector('#event-start-time'),
       {
         dateFormat: 'd/m/y H:i',
-        enableTime: true,
-        // eslint-disable-next-line camelcase
-        time_24hr: true,
         defaultDate: this._state.dateFrom,
+        maxDate: this._state.dateFrom,
+        enableTime: true,
         onChange: this.#dateFromChangeHandler,
+        'time_24hr': true,
       },
     );
+
     this.#datepicker.to = flatpickr(
       this.element.querySelector('#event-end-time'),
       {
         dateFormat: 'd/m/y H:i',
-        enableTime: true,
-        // eslint-disable-next-line camelcase
-        time_24hr: true,
         defaultDate: this._state.dateTo,
         minDate: this._state.dateFrom,
+        enableTime: true,
         onChange: this.#dateToChangeHandler,
+        'time_24hr': true,
       },
     );
   }
